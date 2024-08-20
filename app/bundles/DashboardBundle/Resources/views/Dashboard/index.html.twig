@@ -11,7 +11,7 @@
       'customButtons': [
           {
               'attr': {
-                  'class': 'btn btn-default btn-nospin',
+                  'class': 'btn btn-primary btn-nospin',
                   'data-toggle': 'ajaxmodal',
                   'data-target': '#MauticSharedModal',
                   'href': path('mautic_dashboard_action', {'objectAction': 'new'}),
@@ -64,10 +64,27 @@
   </div>
   {% endif %}
 
-  <div class="row pt-md pl-md">
-      <div class="col-sm-6">
-          {{ include('@MauticCore/Helper/graph_dateselect.html.twig', {'dateRangeForm': dateRangeForm}) }}
+  <div class="row pt-md pl-md pr-md">
+      <div class="col-sm-12">
+        <div class="d-flex fd-row fw-nowrap gap-sm ai-center jc-space-between">
+            {{ include('@MauticCore/Helper/graph_dateselect.html.twig', {'dateRangeForm': dateRangeForm}) }}
+            <div class="dropdown">
+                <a href="#" class="btn btn-ghost btn-small btn-nospin" data-toggle="dropdown" aria-expanded="false">
+                    {{ 'mautic.dashboard.quick_filters'|trans }}
+                    <i class="ri-arrow-down-s-line"></i>
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a href="#" onclick="setDateRange('today')">{{ 'mautic.dashboard.date.today'|trans }}</a></li>
+                    <li><a href="#" onclick="setDateRange('yesterday')">{{ 'mautic.dashboard.date.yesterday'|trans }}</a></li>
+                    <li><a href="#" onclick="setDateRange(7)">{{ 'mautic.dashboard.date.last_7_days'|trans }}</a></li>
+                    <li><a href="#" onclick="setDateRange(30)">{{ 'mautic.dashboard.date.last_30_days'|trans }}</a></li>
+                    <li><a href="#" onclick="setDateRange(90)">{{ 'mautic.dashboard.date.last_90_days'|trans }}</a></li>
+                </ul>
+            </div>            
+        </div>
+          
       </div>
+      
   </div>
 
   {% if widgets|length > 0 %}
