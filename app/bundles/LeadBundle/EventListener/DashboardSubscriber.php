@@ -81,21 +81,193 @@ class DashboardSubscriber extends MainDashboardSubscriber
             }
 
             if (!$event->isCached()) {
+                $chartData = $this->leadModel->getLeadsLineChartData(
+                    $params['timeUnit'],
+                    $params['dateFrom'],
+                    $params['dateTo'],
+                    $params['dateFormat'],
+                    $params['filter'],
+                    $canViewOthers
+                );
+
+                $interval  = $params['dateFrom']->diff($params['dateTo']);
+                $totalDays = $interval->days + 1; // +1 to include the last day
+
+                $previousDateTo   = clone $params['dateFrom'];
+                $previousDateFrom = (clone $previousDateTo)->sub($interval);
+
+                $previousPeriodData = $this->leadModel->getLeadsLineChartData(
+                    $params['timeUnit'],
+                    $previousDateFrom,
+                    $previousDateTo,
+                    $params['dateFormat'],
+                    $params['filter'],
+                    $canViewOthers
+                );
+
+                $currentTotal  = array_sum($chartData['datasets'][0]['data']);
+                $previousTotal = array_sum($previousPeriodData['datasets'][0]['data']);
+
+                $growthRate = 0;
+                if (0 != $previousTotal) {
+                    $growthRate = (($currentTotal - $previousTotal) / $previousTotal) * 100;
+                }
+
+                // Volatility
+                $data          = $chartData['datasets'][0]['data'];
+                $maxLead       = max($data);
+                $minLead       = min(array_filter($data, fn ($val) => $val > 0) ?: [0]);
+                $avgDailyLeads = $currentTotal / $totalDays;
+
+                $leadVolatility = 0;
+                if ($avgDailyLeads > 0) {
+                    $leadVolatility = ($maxLead - $minLead) / $avgDailyLeads * 100;
+                }
+
+                // Standard Deviation
+                $mean         = array_sum($data) / count($data);
+                $sumOfSquares = array_reduce($data, function ($carry, $item) use ($mean) {
+                    return $carry + pow($item - $mean, 2);
+                }, 0);
+                $standardDeviation = sqrt($sumOfSquares / count($data));
+
+                // Best day of the week calculation
+                $dailyTotals = [];
+                $daysCounted = [];
+
+                foreach ($chartData['datasets'][0]['data'] as $index => $value) {
+                    $date      = $chartData['labels'][$index];
+                    $dayOfWeek = date('l', strtotime($date));
+                    if (!isset($dailyTotals[$dayOfWeek])) {
+                        $dailyTotals[$dayOfWeek] = 0;
+                        $daysCounted[$dayOfWeek] = 0;
+                    }
+                    $dailyTotals[$dayOfWeek] += $value;
+                    ++$daysCounted[$dayOfWeek];
+                }
+
+                $bestDay    = '';
+                $bestDayAvg = 0;
+                foreach ($dailyTotals as $day => $total) {
+                    $avg = $daysCounted[$day] > 0 ? $total / $daysCounted[$day] : 0;
+                    if ($avg > $bestDayAvg) {
+                        $bestDay    = $day;
+                        $bestDayAvg = $avg;
+                    }
+                }
+
+                // Calculate high-performance days
+                $highPerformanceThreshold = $avgDailyLeads * 1.5;
+                $highPerformanceDays      = 0;
+
+                foreach ($chartData['datasets'][0]['data'] as $dailyValue) {
+                    if ($dailyValue > $highPerformanceThreshold) {
+                        ++$highPerformanceDays;
+                    }
+                }
+
+                $highPerformancePercentage = round(($highPerformanceDays / $totalDays) * 100, 1);
+
+                // Best day of the month calculation
+                $bestDayIndex = 0;
+                $bestDayValue = 0;
+                $labels       = $chartData['labels'];
+
+                foreach ($data as $index => $value) {
+                    if ($value > $bestDayValue) {
+                        $bestDayIndex = $index;
+                        $bestDayValue = $value;
+                    }
+                }
+
+                $bestDate       = $bestDayValue > 0 ? $labels[$bestDayIndex] : null;
+                $bestDayOfMonth = $bestDate ? date('d', strtotime($bestDate)) : null;
+
+                // General weekly growth direction
+                $data                = $chartData['datasets'][0]['data'];
+                $firstThreeDaysTotal = array_sum(array_slice($data, 0, 3));
+                $firstThreeDaysAvg   = floor($firstThreeDaysTotal / 3);
+                $lastThreeDaysTotal  = array_sum(array_slice($data, -3, 3));
+                $lastThreeDaysAvg    = floor($lastThreeDaysTotal / 3);
+
+                $trend = '';
+                if ($lastThreeDaysAvg > $firstThreeDaysAvg) {
+                    $trend = 'growth';
+                } elseif ($lastThreeDaysAvg < $firstThreeDaysAvg) {
+                    $trend = 'decline';
+                } else {
+                    $trend = 'stability';
+                }
+
+                // Checks if worst day last week is the same this week
+                // / Find the worst days for the current period
+                $worstDaysCurrent = [];
+                $lowestCount      = null;
+                foreach ($chartData['datasets'][0]['data'] as $index => $count) {
+                    $date    = $chartData['labels'][$index];
+                    $dayName = date('l', strtotime($date));
+                    if (null === $lowestCount || $count < $lowestCount) {
+                        $lowestCount      = $count;
+                        $worstDaysCurrent = [['day' => $dayName, 'count' => $count]];
+                    } elseif ($count == $lowestCount) {
+                        $worstDaysCurrent[] = ['day' => $dayName, 'count' => $count];
+                    }
+                }
+
+                // / Find the worst days for the previous period
+                $worstDaysPrevious   = [];
+                $lowestCountPrevious = null;
+                foreach ($previousPeriodData['datasets'][0]['data'] as $index => $count) {
+                    $date    = $previousPeriodData['labels'][$index];
+                    $dayName = date('l', strtotime($date));
+                    if (null === $lowestCountPrevious || $count < $lowestCountPrevious) {
+                        $lowestCountPrevious = $count;
+                        $worstDaysPrevious   = [['day' => $dayName, 'count' => $count]];
+                    } elseif ($count == $lowestCountPrevious) {
+                        $worstDaysPrevious[] = ['day' => $dayName, 'count' => $count];
+                    }
+                }
+
+                // / Ensure both periods have the same number of days for comparison
+                $currentDaysCount  = count($chartData['datasets'][0]['data']);
+                $previousDaysCount = count($previousPeriodData['datasets'][0]['data']);
+                if ($previousDaysCount > $currentDaysCount) {
+                    $worstDaysPrevious = array_slice($worstDaysPrevious, 0, $currentDaysCount);
+                }
+
                 $event->setTemplateData([
-                    'chartType'   => 'line',
-                    'chartHeight' => $widget->getHeight() - 80,
-                    'chartData'   => $this->leadModel->getLeadsLineChartData(
-                        $params['timeUnit'],
-                        $params['dateFrom'],
-                        $params['dateTo'],
-                        $params['dateFormat'],
-                        $params['filter'],
-                        $canViewOthers
-                    ),
+                    'chartType'                 => 'line',
+                    'chartHeight'               => $widget->getHeight() - 80,
+                    'chartData'                 => $chartData,
+                    'previousPeriodData'        => $previousPeriodData,
+                    'showTotal'                 => 'true',
+                    'showComparison'            => 'true',
+                    'dateFrom'                  => $params['dateFrom']->format('Y-m-d'),
+                    'dateTo'                    => $params['dateTo']->format('Y-m-d'),
+                    'totalDays'                 => $totalDays,
+                    'currentTotal'              => $currentTotal,
+                    'previousTotal'             => $previousTotal,
+                    'avgDailyLeads'             => $avgDailyLeads,
+                    'growthRate'                => $growthRate,
+                    'leadVolatility'            => $leadVolatility,
+                    'maxLead'                   => $maxLead,
+                    'minLead'                   => $minLead,
+                    'standardDeviation'         => $standardDeviation,
+                    'bestDay'                   => $bestDay,
+                    'bestDayAvg'                => $bestDayAvg,
+                    'highPerformanceDays'       => $highPerformanceDays,
+                    'highPerformancePercentage' => $highPerformancePercentage,
+                    'bestDayOfMonth'            => $bestDayOfMonth,
+                    'bestDayValue'              => $bestDayValue,
+                    'firstThreeDaysAvg'         => $firstThreeDaysAvg,
+                    'lastThreeDaysAvg'          => $lastThreeDaysAvg,
+                    'trend'                     => $trend,
+                    'worstDaysCurrent'          => $worstDaysCurrent,
+                    'worstDaysPrevious'         => $worstDaysPrevious,
                 ]);
             }
 
-            $event->setTemplate('@MauticCore/Helper/chart.html.twig');
+            $event->setTemplate('@MauticLead/Widget/created_leads_in_time.html.twig');
             $event->stopPropagation();
 
             return;
