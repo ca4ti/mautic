@@ -18,67 +18,111 @@
       </div>
       <div class="modal-body row">
         <div class="col-md-12">
-          {% set shortcuts = { 'navigation': { '⇧+d':
-          'mautic.core.keyboard.load_dashboard', '⇧+c':
-          'mautic.core.keyboard.load_contacts', '⇧+right':
-          'mautic.core.keyboard.activate_right_menu', '⇧+n':
-          'mautic.core.keyboard.show_notifications', '⇧+s':
-          'mautic.core.keyboard.global_search' }, 'actions': { 'mod+z':
-          'mautic.core.keyboard.undo_change', 'mod+⇧+z':
-          'mautic.core.keyboard.redo_change' } } %}
-          <h4 class="fw-sb mb-md">
+          {% set shortcuts = {
+            'navigation': {
+              'g+d': 'mautic.core.keyboard.load_dashboard',
+              'g+c': 'mautic.core.keyboard.load_contacts',
+              'g+e': 'mautic.core.keyboard.load_emails',
+              'g+f': 'mautic.core.keyboard.load_forms',
+              'g+s': 'mautic.core.keyboard.load_segments',
+              'g+p': 'mautic.core.keyboard.load_landing_pages',
+            },
+            'functions': {
+              '/' : 'mautic.core.keyboard.list_search',
+              'f+/': 'mautic.core.keyboard.global_search',
+              'f+n': 'mautic.core.keyboard.show_notifications',
+              'f+m': 'mautic.core.keyboard.open_settings',
+            },
+            'actions': {
+              '⌘+z': 'mautic.core.keyboard.undo_change',
+              '⌘+⇧+z': 'mautic.core.keyboard.redo_change',
+              'e' : 'mautic.core.keyboard.edit',
+              'c' : 'mautic.core.keyboard.create',
+              '⌘+Enter' : 'mautic.core.keyboard.save',
+              'g+i' : 'mautic.core.keyboard.back',
+              'Del' : 'mautic.core.keyboard.delete',
+            } } %}
+          <h4 class="fw-sb">
             {{ "mautic.core.keyboard.section.global" | trans }}
           </h4>
           {% for section, shortcut_list in shortcuts %}
-          <h5 class="mb-sm fw-sb">
-            {{ ('mautic.core.keyboard.section.' ~ section)|trans }}
-          </h5>
-          {% for key, description in shortcut_list %}
-          <div class="row mb-xs">
-            <div class="col-md-8">
-              {{ description | trans }}
-            </div>
-            <div class="col-md-4 text-right">
-              <div>
-                {% set keys = key|split('+') %} {% for k in keys %}
-                <kbd>{{ k }}</kbd>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-          <hr />
-          {% endfor %} {% set shortcuts = { 'contacts': { 'a':
-          'mautic.core.keyboard.quick_add_contact', 't':
-          'mautic.core.keyboard.activate_table_view', 'c':
-          'mautic.core.keyboard.activate_card_view', } } %} {% for section,
-          shortcut_list in shortcuts %}
-          <h4 class="mb-sm fw-sb">
-            {{ ('mautic.core.keyboard.section.' ~ section)|trans }}
-          </h4>
-          {% for key, description in shortcut_list %}
-          <div class="row mb-xs">
-            <div class="col-md-8">
-              {{ description | trans }}
-            </div>
-            <div class="col-md-4 text-right">
-              <div>
-                {% set keys = key|split('+') %} {% for k in keys %}
-                <kbd>{{ k }}</kbd>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-          <hr />
+            <h5 class="mb-xs mt-md fw-sb">
+              {{ ('mautic.core.keyboard.section.' ~ section)|trans }}
+            </h5>
+            <table class="shortcut-table bsv-xs">
+              {% for key, description in shortcut_list %}
+                <tr class="mb-xs">
+                  <td class="shortcut-description">
+                    {{ description | trans }}
+                  </td>
+                  <td class="shortcut-keys text-right">
+                    {% set keys = key|split('+') %}
+                    {% for k in keys %}
+                      <kbd>{{ k }}</kbd>
+                    {% endfor %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
           {% endfor %}
         </div>
-        <div class="modal-footer">
-          <p>
-            {{ 'mautic.core.keyboard.press_to_view'|trans({'%shift%':
-            '<kbd>⇧</kbd>', '%question%': '<kbd>?</kbd>'})|raw }}
-          </p>
+        <div class="">
+          <hr />
+          {% set shortcuts = {
+            'contacts': {
+              'a': 'mautic.core.keyboard.quick_add_contact',
+              'v': 'mautic.core.keyboard.toggle_view',
+            },
+            'emails': {
+              's' : 'mautic.core.keyboard.send_example',
+            },
+          } %}
+          <ul class="accordion" id="accordion" role="tablist" aria-multiselectable="true">
+            {% for section, shortcut_list in shortcuts %}
+              <li class="panel">
+                <a role="button" id="heading{{section}}" class="accordion-heading collapsed" data-toggle="collapse"
+                  data-parent="#accordion" href="#collapse{{section}}" aria-expanded="false"
+                  aria-controls="collapse{{section}}">
+                  <i class="ri-arrow-down-s-line accordion-arrow"></i>
+                  <span class="accordion-title">{{ ('mautic.core.keyboard.section.' ~ section)|trans }}</span>
+                </a>
+                <div id="collapse{{section}}" class="collapse accordion-wrapper" role="tabpanel"
+                  aria-labelledby="heading{{section}}">
+                  <div class="accordion-content col-xs-12">
+                    <table class="shortcut-table bsv-xs">
+                      {% for key, description in shortcut_list %}
+                        <tr class="mb-xs">
+                          <td class="shortcut-description">
+                            {{ description | trans }}
+                          </td>
+                          <td class="shortcut-keys text-right">
+                            {% set keys = key|split('+') %}
+                            {% for k in keys %}
+                              <kbd>{{ k }}</kbd>
+                            {% endfor %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </table>
+                  </div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
         </div>
+
+      </div>
+      <div class="alert alert-info col-xs-12">
+        <div class="d-flex jc-space-between ai-center small">
+          <div><kbd>⌘</kbd> <i class="ri-arrow-right-line"></i> <kbd>Ctrl</kbd></div>
+          <div><kbd>⌥</kbd> <i class="ri-arrow-right-line"></i> <kbd>Alt</kbd></div>
+          <div><kbd>⇧</kbd> <i class="ri-arrow-right-line"></i> <kbd>Shift</kbd></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <p>
+          {{ 'mautic.core.keyboard.press_to_view'|trans({'%shift%': '<kbd>⇧</kbd>', '%question%': '<kbd>/</kbd>'})|raw }}
+        </p>
       </div>
     </div>
   </div>

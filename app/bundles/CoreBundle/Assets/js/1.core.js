@@ -154,24 +154,46 @@ var Mautic = {
      * Binds global keyboard shortcuts
      */
     bindGlobalKeyboardShortcuts: function () {
-        Mautic.addKeyboardShortcut('shift+d', 'Load the Dashboard', function (e) {
+        Mautic.addKeyboardShortcut('g d', 'Load the Dashboard', function (e) {
             mQuery('#mautic_dashboard_index').click();
         });
 
-        Mautic.addKeyboardShortcut('shift+c', 'Load Contacts', function (e) {
+        Mautic.addKeyboardShortcut('g c', 'Load Contacts', function (e) {
             mQuery('#mautic_contact_index').click();
         });
 
-        Mautic.addKeyboardShortcut('shift+right', 'Activate Right Menu', function (e) {
-            mQuery(".navbar-right a[data-toggle='sidebar']").click();
+        Mautic.addKeyboardShortcut('g e', 'Load Emails', function (e) {
+            mQuery('#mautic_email_index').click();
         });
 
-        Mautic.addKeyboardShortcut('shift+n', 'Show Notifications', function (e) {
+        Mautic.addKeyboardShortcut('g f', 'Load Forms', function (e) {
+            mQuery('#mautic_form_index').click();
+        });
+
+        Mautic.addKeyboardShortcut('g s', 'Load Segments', function (e) {
+            mQuery('#mautic_segment_index').click();
+        });
+
+        Mautic.addKeyboardShortcut('g p', 'Load Segments', function (e) {
+            mQuery('#mautic_page_index').click();
+        });
+
+        Mautic.addKeyboardShortcut('f m', 'Toggle Admin Menu', function (e) {
+            mQuery("#admin-menu").click();
+        });
+
+        Mautic.addKeyboardShortcut('f n', 'Show Notifications', function (e) {
             mQuery('.dropdown-notification').click();
         });
 
-        Mautic.addKeyboardShortcut('shift+s', 'Global Search', function (e) {
+        Mautic.addKeyboardShortcut('f /', 'Global Search', function (e) {
             mQuery('#globalSearchContainer .search-button').click();
+        });
+
+        Mautic.addKeyboardShortcut('/', 'Search current list', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            mQuery('#list-search').focus();
         });
 
         Mautic.addKeyboardShortcut('mod+z', 'Undo change', function (e) {
@@ -184,6 +206,35 @@ var Mautic = {
             if (mQuery('.btn-redo').length) {
                 mQuery('.btn-redo').click();
             }
+        });
+
+        Mautic.addKeyboardShortcut('e', 'Edit current resource', function(e) {
+            mQuery('#edit').click();
+        });
+
+        Mautic.addKeyboardShortcut('c', 'Create current resource', function(e) {
+            mQuery('#new').click();
+        });
+
+        Mautic.addKeyboardShortcut('del', 'Delete  current resource', function(e) {
+            mQuery('#delete').click();
+        });
+
+        Mautic.addKeyboardShortcut('enter', 'Modal confirm action', function(e) {
+            mQuery('#confirm').click();
+        });
+
+        Mautic.addKeyboardShortcut('s', 'General send example button', function(e) {
+            mQuery('#sendEmailButton').click();
+        });
+
+        Mautic.addKeyboardShortcut('ctrl+enter', 'Save changes', function(e) {
+            mQuery('[id*="buttons_save"]').click();
+        });
+
+        Mautic.addKeyboardShortcut('g i', 'Back to index (list)', function(e) {
+            mQuery('[id*="buttons_cancel"]').click();
+            mQuery('#close').click();
         });
 
         Mousetrap.bind('?', function (e) {
