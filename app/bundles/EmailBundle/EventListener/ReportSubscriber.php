@@ -6,6 +6,7 @@ use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Mautic\CoreBundle\Doctrine\Provider\GeneratedColumnsProviderInterface;
+use Mautic\CoreBundle\Helper\Chart\BarChart;
 use Mautic\CoreBundle\Helper\Chart\ChartQuery;
 use Mautic\CoreBundle\Helper\Chart\LineChart;
 use Mautic\CoreBundle\Helper\Chart\PieChart;
@@ -257,6 +258,7 @@ class ReportSubscriber implements EventSubscriberInterface
         $event->addTable(self::CONTEXT_EMAILS, $data);
         $context = self::CONTEXT_EMAILS;
         $event->addGraph($context, 'pie', 'mautic.email.graph.pie.read.ingored.unsubscribed.bounced');
+        $event->addGraph($context, 'bar', 'mautic.email.graph.bar.read.clicked.unsubscribed.bounced');
         $event->addGraph($context, 'table', 'mautic.email.table.most.emails.clicks');
 
         if ($event->checkContext(self::CONTEXT_EMAIL_STATS)) {
@@ -475,6 +477,7 @@ class ReportSubscriber implements EventSubscriberInterface
 
         if ($event->checkContext(self::CONTEXT_EMAILS)
             && !in_array('mautic.email.graph.pie.read.ingored.unsubscribed.bounced', $graphs)
+            && !in_array('mautic.email.graph.bar.read.clicked.unsubscribed.bounced', $graphs)
             && !in_array('mautic.email.table.most.emails.clicks', $graphs)) {
             return;
         }
@@ -536,6 +539,52 @@ class ReportSubscriber implements EventSubscriberInterface
                     );
                     break;
 
+                case 'mautic.email.graph.bar.read.clicked.unsubscribed.bounced':
+                    $this->addTrackableTablesForEmailStats($queryBuilder);
+                    $queryBuilder->select('e.id, e.name, e.sent_count, e.read_count, tr.unique_hits as `unique_clicks`,
+                        count(CASE WHEN '.self::DNC_PREFIX.'.id and '.self::DNC_PREFIX.'.reason = :unsubscribed THEN 1 ELSE null END) as unsubscribed,
+                        count(CASE WHEN '.self::DNC_PREFIX.'.id and '.self::DNC_PREFIX.'.reason = :bounced THEN 1 ELSE null END) as bounced'
+                    )
+                    ->groupBy('e.id')
+                    ->setParameter('unsubscribed', DoNotContact::UNSUBSCRIBED)
+                    ->setParameter('bounced', DoNotContact::BOUNCED);
+
+                    $this->addDNCTableForEmails($queryBuilder);
+
+                    $data = $queryBuilder->executeQuery()->fetchAllAssociative();
+
+                    if (is_array($data)) {
+                        $names        = array_column($data, 'name');
+                        $sentCount    = array_column($data, 'sent_count');
+                        $readCount    = array_column($data, 'read_count');
+                        $clickedCount = array_column($data, 'unique_clicks');
+                        $unsubscribed = array_column($data, 'unsubscribed');
+                        $bounced      = array_column($data, 'bounced');
+
+                        $sentCount[]    = 0;
+                        $readCount[]    = 0;
+                        $clickedCount[] = 0;
+                        $unsubscribed[] = 0;
+                        $bounced[]      = 0;
+
+                        $chart = new BarChart($names);
+
+                        $chart->setDataset('Sent Count', $sentCount);
+                        $chart->setDataset('Read Count', $readCount);
+                        $chart->setDataset('Clicked Count', $clickedCount);
+                        $chart->setDataset('Unsubscribed Count', $unsubscribed);
+                        $chart->setDataset('Bounced Count', $bounced);
+
+                        $event->setGraph(
+                            $g,
+                            [
+                                'data'      => $chart->render(),
+                                'name'      => $g,
+                                'iconClass' => 'fa-flag-checkered',
+                            ]
+                        );
+                    }
+                    break;
                 case 'mautic.email.graph.pie.read.ingored.unsubscribed.bounced':
                     $queryBuilder->select('SUM(DISTINCT e.sent_count) as sent_count,
                         SUM(DISTINCT e.read_count) as read_count,
