@@ -55,9 +55,16 @@
     }
 
     * { box-sizing: inherit; }
+
+    .alert {
+        background-color: var(--layer-alternate);
+        margin-left: calc(-1 * var(--layout-density-padding-inline-local));
+        margin-right: calc(-1 * var(--layout-density-padding-inline-local));
+    }
+
 }
 
-.nav-tabs-contained + .tab-content {
+.nav-tabs-contained + .tab-content, .tile > {
     .tile {
         background-color: var(--layer-alternate);
 
