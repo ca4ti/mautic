@@ -20,6 +20,7 @@ use Mautic\LeadBundle\Model\FieldModel;
 use Mautic\LeadBundle\Model\LeadModel;
 use Mautic\UserBundle\Entity\User;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Form\Form;
@@ -30,12 +31,10 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\Routing\Router;
 use Twig\Environment;
 
-class EmailControllerTest extends \PHPUnit\Framework\TestCase
+class EmailControllerTest extends TestCase
 {
-    /**
-     * @var MockObject|Translator
-     */
-    private MockObject $translatorMock;
+    public const NEW_CATEGORY_TITLE = 'New category';
+    private MockObject|Translator $translatorMock;
 
     /**
      * @var MockObject|Session
@@ -45,7 +44,7 @@ class EmailControllerTest extends \PHPUnit\Framework\TestCase
     /**
      * @var MockObject|ModelFactory<EmailModel>
      */
-    private MockObject $modelFactoryMock;
+    private MockObject|ModelFactory $modelFactoryMock;
 
     /**
      * @var MockObject|Container

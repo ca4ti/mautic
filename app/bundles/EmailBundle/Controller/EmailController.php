@@ -1405,6 +1405,8 @@ class EmailController extends FormController
      * Deletes a group of entities.
      *
      * @return Response
+     *
+     * @todo Move this to BatchEmailController
      */
     public function batchDeleteAction(Request $request)
     {
